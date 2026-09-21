@@ -495,7 +495,8 @@ renderer.renderer.domElement.addEventListener('webglcontextrestored', () =>
 );
 menu();
 renderer.renderer.setAnimationLoop((time: number) => {
-  const dt = Math.min(0.1, lastTime ? (time - lastTime) / 1000 : 0);
+  const elapsed = lastTime ? (time - lastTime) / 1000 : 0;
+  const dt = Math.min(0.1, elapsed);
   lastTime = time;
   const direction = xr?.active ? xr.sample(settings.comfort) : paused ? zero() : input.sample();
   if (mode === 'menu') {
@@ -505,7 +506,7 @@ renderer.renderer.setAnimationLoop((time: number) => {
     renderer.menu(dt);
   } else if (mode === 'local' && !paused && current.phase !== 'result') {
     if (countdown > 0) {
-      countdown -= dt;
+      countdown -= elapsed;
       $('countdown').textContent = String(Math.max(1, Math.ceil(countdown)));
       if (countdown <= 0) {
         $('countdown').hidden = true;

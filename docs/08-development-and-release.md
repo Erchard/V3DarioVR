@@ -2,6 +2,8 @@
 
 Документація передує коду. Послідовність обов'язкова: завершити desktop single-player → VR single-player → онлайн. Базова геометрія 3D з M0.
 
+План нижче зберігає початкові критерії приймання. Код усіх трьох режимів уже реалізовано за подальшим запитом користувача; це не означає проходження апаратних gate S2/S3. Поточні докази — у [звіті](10-implementation-status.md).
+
 ## Етап 1
 
 | Крок | Робота | Залежності | Доказ завершення |
@@ -43,30 +45,30 @@ Gate S3: Chrome і Quest 2 грають у спільному матчі, сер
 Definition of Done: реалізовано acceptance criterion, змістовні тести PASS, typecheck/lint/build PASS, немає нових unhandled errors, актуальні документи, записані обмеження.
 Назви гілок/PR та commit політика визначаються під час ініціалізації репозиторію; цей пакет не створює PR, сервер або сайт.
 
-## Майбутні команди проєкту
+## Команди проєкту
 
-M0 має додати скрипти з такими призначеннями; зараз вони ще не існують:
+Скрипти реалізовані у package.json:
 
 | Команда | Призначення |
 | --- | --- |
 | npm ci | Відтворювана інсталяція з lockfile |
-| npm run dev | Локальний desktop-клієнт |
+| npm run dev | Локальний клієнт та сервер |
 | npm run lint / npm run typecheck | Статичні перевірки |
 | npm test | Unit/integration |
 | npm run test:e2e | Chrome E2E |
 | npm run build | Production build |
-| npm run dev:server | Сервер, від M9 |
-| npm run test:load | Навантаження, від M12 |
+| npm run dev:server | Сервер з автоматичним перезапуском |
+| npm run test:load | Локальний smoke навантаження |
 
-CI на кожному PR: install → lint/typecheck → unit/integration → build → Chrome smoke. Окремий артефакт тестів/trace на помилці. На етапі 3 додати server integration. Hardware VR та повне навантаження — перед випуском, не видавати емуляцію за апаратне приймання.
+CI на кожному PR: install → lint/typecheck → unit/integration → build → Chrome smoke. Окремий артефакт тестів/trace на помилці. Server integration і production smoke вже входять у CI. Hardware VR та повне навантаження — перед випуском, не видавати емуляцію за апаратне приймання.
 CI обмежує час job, використовує lockfile та не надає секрети стороннім PR.
 
 ## Середовища та розгортання
 
 Local: Chrome localhost. Quest: HTTPS staging або документований локальний debug-тунель. Звичайний HTTP за LAN IP не вважати production-рішенням для WebXR.
-Staging: статичний client build через HTTPS; на етапі 3 окремий Node server за reverse proxy з WSS. Production — окремі URL/секрети/ліміти.
+Production: один Node.js-процес обслуговує dist та /socket. Render надає HTTPS/WSS; конфігурація безкоштовного розгортання — render.yaml.
 Провайдера й бюджет обрати перед фактичним деплоєм; документація не санкціонує платні покупки.
-Env сервера: PORT, ALLOWED_ORIGINS, MAX_ROOMS, LOG_LEVEL, ROOM_LIMIT_PER_IP. Клієнт має тільки публічний SERVER_URL. За відсутності потрібної конфігурації сервер не починає слухати.
+Env сервера: PORT, ALLOWED_ORIGINS (або RENDER_EXTERNAL_URL), MAX_ROOMS, NODE_ENV. Необовʼязкова публічна змінна клієнта: VITE_SERVER_URL. За відсутності потрібної конфігурації сервер не починає слухати.
 Static assets з content hash кешувати довго; HTML/manifest сумісності — коротко або no-cache. Спочатку сервер зі сумісним protocol/rules, потім client. Несумісна зміна вимагає drain старих матчів.
 
 Health endpoints: /healthz — процес живий; /readyz — готовий приймати кімнати. Після SIGTERM вимкнути readiness та нові кімнати; дати поточним матчам до 330 s, потім повідомити SERVER_RESTART і закрити sockets. Аварійне падіння виявляється клієнтом через heartbeat/timeout.
