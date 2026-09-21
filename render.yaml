@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: v3dario
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /readyz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MAX_ROOMS
+        value: "2"

@@ -1,0 +1,17 @@
+# Replace game.example.com and deploy client dist to /srv/v3dario.
+game.example.com {
+  encode zstd gzip
+  handle /socket {
+    reverse_proxy 127.0.0.1:8080
+  }
+  handle {
+    root * /srv/v3dario
+    try_files {path} /index.html
+    file_server
+  }
+  header {
+    X-Content-Type-Options nosniff
+    Referrer-Policy strict-origin-when-cross-origin
+    Permissions-Policy "xr-spatial-tracking=(self)"
+  }
+}
