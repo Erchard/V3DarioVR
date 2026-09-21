@@ -14,7 +14,7 @@ import {
   type Vec3,
 } from '../../packages/core';
 import { ArenaRenderer } from './render';
-import { DesktopInput } from './input';
+import { ScreenInput } from './input';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
@@ -56,7 +56,7 @@ let settings = {
   schemaVersion: 1,
   sensitivity: 0.002,
   volume: 0.25,
-  low: false,
+  low: matchMedia('(pointer: coarse)').matches,
   invert: false,
   comfort: 0.6,
   fov: 75,
@@ -75,7 +75,7 @@ try {
     };
   }
 } catch {}
-const input = new DesktopInput(renderer.renderer.domElement, renderer.camera, () => pause());
+const input = new ScreenInput(renderer.renderer.domElement, renderer.camera, () => pause());
 let audio: AudioContext | undefined;
 let lastFood = 0;
 function tone(freq: number) {
@@ -150,11 +150,17 @@ function help(back: () => void) {
   panel(
     `<div class="eyebrow">ШВИДКИЙ СТАРТ</div><h2>Рухайся у трьох вимірах.</h2><p class="lead">Ти всередині своєї клітини. Малі світлові частинки — їжа. Більша маса дає більший радіус, але зменшує швидкість.</p><dl class="control-list"><dt>Миша</dt><dd>Огляд навколо</dd><dt>W / S</dt><dd>Уперед / назад у напрямку погляду</dd><dt>A / D</dt><dd>Рух ліворуч / праворуч</dd><dt>Space / Ctrl</dt><dd>Угору / вниз</dd><dt>Esc</dt><dd>Меню й звільнення курсора</dd></dl><p class="notice">Для поглинання потрібно бути щонайменше на 15% важчим. Після появи діє захист 3 секунди. У разі відмови захоплення курсора оглядайся, затиснувши праву кнопку миші.</p><div class="actions"><button id="back">Зрозуміло</button></div>`,
   );
+  if (input.touch) {
+    $('panel').querySelector('.control-list')!.innerHTML =
+      '<dt>Лівий джойстик</dt><dd>Рух у напрямку погляду та вбік</dd><dt>Свайп праворуч</dt><dd>Огляд навколо</dd><dt>↑ / ↓</dt><dd>Угору / вниз</dd><dt>Ⅱ</dt><dd>Ігрове меню</dd>';
+    $('panel').querySelector('.notice')!.textContent =
+      'Для поглинання потрібно бути на 15% важчим. Захист після появи — 3 секунди. Для зручності поверніть телефон горизонтально.';
+  }
   on('back', back);
 }
 function settingsPanel(back: () => void) {
   panel(
-    `<div class="eyebrow">ПІД СЕБЕ</div><h2>Налаштування</h2><label class="field">Чутливість миші<input id="sensitivity" type="range" min="0.0005" max="0.005" step="0.0001" value="${settings.sensitivity}"></label><label class="field">Гучність<input id="volume" type="range" min="0" max="1" step=".05" value="${settings.volume}"></label><label class="field">Поле зору на екрані<input id="fov" type="range" min="60" max="95" step="1" value="${settings.fov}"></label><label class="field">VR: комфортна швидкість<input id="comfort" type="range" min=".3" max="1" step=".05" value="${settings.comfort}"></label><label class="field"><input id="low" type="checkbox" ${settings.low ? 'checked' : ''}> Економна графіка</label><label class="field"><input id="invert" type="checkbox" ${settings.invert ? 'checked' : ''}> Інвертувати вертикальний огляд мишею</label><div class="actions"><button id="save" class="primary">Зберегти</button></div>`,
+    `<div class="eyebrow">ПІД СЕБЕ</div><h2>Налаштування</h2><label class="field">Чутливість огляду<input id="sensitivity" type="range" min="0.0005" max="0.005" step="0.0001" value="${settings.sensitivity}"></label><label class="field">Гучність<input id="volume" type="range" min="0" max="1" step=".05" value="${settings.volume}"></label><label class="field">Поле зору на екрані<input id="fov" type="range" min="60" max="95" step="1" value="${settings.fov}"></label><label class="field">VR: комфортна швидкість<input id="comfort" type="range" min=".3" max="1" step=".05" value="${settings.comfort}"></label><label class="field"><input id="low" type="checkbox" ${settings.low ? 'checked' : ''}> Економна графіка</label><label class="field"><input id="invert" type="checkbox" ${settings.invert ? 'checked' : ''}> Інвертувати вертикальний огляд</label><div class="actions"><button id="save" class="primary">Зберегти</button></div>`,
   );
   on('save', () => {
     for (const key of ['sensitivity', 'volume', 'comfort', 'fov'] as const)
@@ -574,6 +580,9 @@ if (import.meta.env.DEV && new URLSearchParams(location.search).has('test')) {
       },
       get paused() {
         return paused;
+      },
+      get view() {
+        return { yaw: input.yaw, pitch: input.pitch };
       },
       get playerId() {
         return playerId;

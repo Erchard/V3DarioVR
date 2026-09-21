@@ -520,3 +520,166 @@ kbd {
     font-size: 20px;
   }
 }
+
+/* Screen controls submit the same movement direction as keyboard and XR. */
+#touch-controls {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#touch-controls [data-control],
+#touch-pause {
+  pointer-events: auto;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+#touch-look {
+  position: absolute;
+  left: 50%;
+  right: 0;
+  top: 70px;
+  bottom: 95px;
+}
+#touch-look span {
+  position: absolute;
+  bottom: 10px;
+  left: 35%;
+  color: #a3b9c7;
+  font-size: 10px;
+  letter-spacing: 2px;
+  pointer-events: none;
+}
+#touch-stick {
+  position: absolute;
+  width: 132px;
+  height: 132px;
+  left: max(24px, env(safe-area-inset-left));
+  bottom: max(24px, env(safe-area-inset-bottom));
+  border-radius: 50%;
+  background: #122c3d88;
+  border: 1px solid #80d6cf66;
+}
+#touch-stick i {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  left: 43px;
+  top: 43px;
+  border-radius: 50%;
+  background: #70efd099;
+  border: 1px solid #b7ffef;
+  pointer-events: none;
+}
+#touch-stick span {
+  position: absolute;
+  bottom: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  color: #b6d1dd;
+  pointer-events: none;
+}
+.touch-height {
+  position: absolute;
+  display: flex;
+  gap: 12px;
+  right: max(24px, env(safe-area-inset-right));
+  bottom: max(24px, env(safe-area-inset-bottom));
+}
+.touch-height button {
+  width: 58px;
+  height: 58px;
+  font-size: 26px;
+  padding: 0;
+  background: #142d40bb;
+}
+#touch-pause {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  width: 48px;
+  height: 48px;
+  padding: 0;
+}
+.touch-device .keys,
+.touch-device .bottom {
+  display: none;
+}
+.touch-device .overlay {
+  padding: max(68px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right))
+    max(20px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+}
+.touch-device .panel {
+  max-height: calc(100dvh - 95px);
+  max-width: 100%;
+}
+.touch-device .brand {
+  top: max(16px, env(safe-area-inset-top));
+  left: max(20px, env(safe-area-inset-left));
+}
+.touch-device .top-status {
+  display: none;
+}
+.touch-device .hud .mass {
+  top: max(68px, env(safe-area-inset-top));
+  left: max(16px, env(safe-area-inset-left));
+  padding: 8px 12px;
+  min-width: 90px;
+  backdrop-filter: none;
+}
+.touch-device .mass strong {
+  font-size: 25px;
+}
+.touch-device .mass small {
+  display: none;
+}
+.touch-device .board {
+  top: 76px;
+  right: max(16px, env(safe-area-inset-right));
+  width: 140px;
+  padding: 9px;
+}
+.touch-device .board li {
+  padding: 3px 0;
+  font-size: 10px;
+}
+.touch-device .board li:nth-child(n + 4) {
+  display: none;
+}
+.touch-device .board ol {
+  margin-top: 6px;
+}
+.touch-device .timer {
+  top: max(24px, env(safe-area-inset-top));
+  font-size: 18px;
+}
+.touch-device .hint {
+  bottom: 12px;
+  max-width: 40%;
+  font-size: 10px;
+}
+@media (max-height: 500px) {
+  .touch-device .panel h1 {
+    font-size: 38px;
+    letter-spacing: -1px;
+  }
+  .touch-device .panel h2 {
+    font-size: 28px;
+  }
+  .touch-device .lead {
+    font-size: 14px;
+    margin: 12px 0;
+  }
+  .touch-device .features {
+    display: none;
+  }
+  .touch-device .actions {
+    margin-top: 12px;
+  }
+  .touch-device .board {
+    display: none;
+  }
+}

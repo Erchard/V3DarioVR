@@ -1,7 +1,10 @@
 import * as THREE from 'three';
 import { zero, type Vec3 } from '../../packages/core';
 import { desktopDirection } from './control-math';
-export class DesktopInput {
+import { TouchControls } from './touch';
+export class ScreenInput {
+  touch = matchMedia('(pointer: coarse)').matches;
+  private touchControls: TouchControls;
   keys = new Set<string>();
   yaw = 0;
   pitch = 0;
@@ -14,6 +17,17 @@ export class DesktopInput {
     public camera: THREE.Camera,
     public onPause: () => void,
   ) {
+    this.touchControls = new TouchControls((x, y) => this.look(x, y), onPause);
+    document.body.classList.toggle('touch-device', this.touch);
+    matchMedia('(pointer: coarse)').addEventListener('change', (e) => {
+      if (this.enabled) this.onPause();
+      this.touch = e.matches;
+      document.body.classList.toggle('touch-device', this.touch);
+    });
+    matchMedia('(orientation: portrait)').addEventListener('change', () => {
+      this.clear();
+      if (this.enabled) this.onPause();
+    });
     window.addEventListener('keydown', (e) => {
       if (!this.enabled) return;
       if (['Space', 'ControlLeft', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
@@ -25,15 +39,7 @@ export class DesktopInput {
     window.addEventListener('keyup', (e) => this.keys.delete(e.code));
     window.addEventListener('mousemove', (e) => {
       if (!this.enabled || (!this.locked && !this.drag)) return;
-      this.yaw -= e.movementX * this.sensitivity;
-      this.pitch = Math.max(
-        (-Math.PI * 85) / 180,
-        Math.min(
-          (Math.PI * 85) / 180,
-          this.pitch - e.movementY * this.sensitivity * (this.invert ? -1 : 1),
-        ),
-      );
-      this.apply();
+      this.look(e.movementX, e.movementY);
     });
     canvas.addEventListener('pointerdown', (e) => {
       if (e.button === 2 && this.enabled) this.drag = true;
@@ -57,16 +63,29 @@ export class DesktopInput {
   get locked() {
     return document.pointerLockElement === this.canvas;
   }
+  private look(x: number, y: number) {
+    this.yaw -= x * this.sensitivity;
+    this.pitch = Math.max(
+      (-Math.PI * 85) / 180,
+      Math.min((Math.PI * 85) / 180, this.pitch - y * this.sensitivity * (this.invert ? -1 : 1)),
+    );
+    this.apply();
+  }
   apply() {
     this.camera.rotation.set(this.pitch, this.yaw, 0, 'YXZ');
   }
   clear() {
     this.keys.clear();
+    this.touchControls.clear();
     this.drag = false;
   }
   async start() {
     this.enabled = true;
     this.apply();
+    if (this.touch) {
+      this.touchControls.show(true);
+      return true;
+    }
     try {
       await this.canvas.requestPointerLock();
       return true;
@@ -76,14 +95,18 @@ export class DesktopInput {
   }
   stop() {
     this.enabled = false;
+    this.touchControls.show(false);
     this.clear();
     if (this.locked) document.exitPointerLock();
   }
   sample(): Vec3 {
     if (!this.enabled) return zero();
-    const forward = Number(this.keys.has('KeyW')) - Number(this.keys.has('KeyS'));
-    const sideways = Number(this.keys.has('KeyD')) - Number(this.keys.has('KeyA'));
-    const up = Number(this.keys.has('Space')) - Number(this.keys.has('ControlLeft'));
+    const forward =
+      Number(this.keys.has('KeyW')) - Number(this.keys.has('KeyS')) + this.touchControls.forward;
+    const sideways =
+      Number(this.keys.has('KeyD')) - Number(this.keys.has('KeyA')) + this.touchControls.sideways;
+    const up =
+      Number(this.keys.has('Space')) - Number(this.keys.has('ControlLeft')) + this.touchControls.up;
     return desktopDirection(this.yaw, this.pitch, forward, sideways, up);
   }
 }

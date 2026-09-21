@@ -50,10 +50,14 @@ test('settings and unsupported VR fallback', async ({ page }) => {
   await page.getByRole('button', { name: /Увійти у VR/ }).click();
   await expect(page.locator('#toast')).toBeVisible();
 });
-test('two browsers share a room and start', async ({ browser }) => {
+test('desktop and touch browser share a room and start', async ({ browser }) => {
   test.setTimeout(60000);
   const a = await browser.newContext({ viewport: { width: 800, height: 600 } }),
-    b = await browser.newContext({ viewport: { width: 800, height: 600 } });
+    b = await browser.newContext({
+      hasTouch: true,
+      isMobile: true,
+      viewport: { width: 844, height: 390 },
+    });
   const p = await a.newPage(),
     q = await b.newPage();
   await p.goto('/');
@@ -70,6 +74,10 @@ test('two browsers share a room and start', async ({ browser }) => {
   await q.getByRole('button', { name: 'Я готовий' }).click();
   await expect(p.locator('#overlay')).toBeHidden({ timeout: 10000 });
   await expect(q.locator('#overlay')).toBeHidden({ timeout: 10000 });
+  await expect(q.locator('#touch-controls')).toBeVisible();
+  await q.getByRole('button', { name: 'Ігрове меню', exact: true }).tap();
+  await expect(q.getByRole('heading', { name: 'Ігрове меню', exact: true })).toBeVisible();
+  await expect(p.locator('#overlay')).toBeHidden();
   await a.close();
   await b.close();
 });
