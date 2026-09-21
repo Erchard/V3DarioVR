@@ -257,12 +257,15 @@ export function place(w: Snapshot, actorId: string, atDeath = false): number {
       .findIndex((a) => a.id === actorId) + 1
   );
 }
+// Eligibility is shared by simulation and player-facing threat indicators.
+export function canPreyOn(a: Cell, b: Cell, tick: number) {
+  return (
+    a.id !== b.id && a.protectedUntil <= tick && b.protectedUntil <= tick && a.mass >= 1.15 * b.mass
+  );
+}
 export function canEat(a: Cell, b: Cell, tick: number) {
   return (
-    a.id !== b.id &&
-    a.protectedUntil <= tick &&
-    b.protectedUntil <= tick &&
-    a.mass >= 1.15 * b.mass &&
+    canPreyOn(a, b, tick) &&
     distance(a.position, b.position) + 0.5 * radius(b.mass) <= radius(a.mass)
   );
 }

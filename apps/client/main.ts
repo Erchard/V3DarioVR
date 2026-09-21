@@ -8,6 +8,7 @@ import {
   leaderboard,
   place,
   distance,
+  canPreyOn,
   zero,
   type World,
   type Snapshot,
@@ -148,13 +149,13 @@ function menu() {
 }
 function help(back: () => void) {
   panel(
-    `<div class="eyebrow">ШВИДКИЙ СТАРТ</div><h2>Рухайся у трьох вимірах.</h2><p class="lead">Ти всередині своєї клітини. Малі світлові частинки — їжа. Більша маса дає більший радіус, але зменшує швидкість.</p><dl class="control-list"><dt>Миша</dt><dd>Огляд навколо</dd><dt>W / S</dt><dd>Уперед / назад у напрямку погляду</dd><dt>A / D</dt><dd>Рух ліворуч / праворуч</dd><dt>Space / Ctrl</dt><dd>Угору / вниз</dd><dt>Esc</dt><dd>Меню й звільнення курсора</dd></dl><p class="notice">Для поглинання потрібно бути щонайменше на 15% важчим. Після появи діє захист 3 секунди. У разі відмови захоплення курсора оглядайся, затиснувши праву кнопку миші.</p><div class="actions"><button id="back">Зрозуміло</button></div>`,
+    `<div class="eyebrow">ШВИДКИЙ СТАРТ</div><h2>Рухайся у трьох вимірах.</h2><p class="lead">Ти всередині своєї клітини. Малі світлові частинки — їжа. Більша маса дає більший радіус, але зменшує швидкість.</p><dl class="control-list"><dt>Миша</dt><dd>Огляд навколо</dd><dt>W / S</dt><dd>Уперед / назад у напрямку погляду</dd><dt>A / D</dt><dd>Рух ліворуч / праворуч</dd><dt>Space / Ctrl</dt><dd>Угору / вниз</dd><dt>Esc</dt><dd>Меню й звільнення курсора</dd></dl><p class="notice">Близькі кульки: зелене свічіння — здобич, червоне — небезпека. Для поглинання потрібно бути щонайменше на 15% важчим. Після появи діє захист 3 секунди. У разі відмови захоплення курсора оглядайся, затиснувши праву кнопку миші.</p><div class="actions"><button id="back">Зрозуміло</button></div>`,
   );
   if (input.touch) {
     $('panel').querySelector('.control-list')!.innerHTML =
       '<dt>Лівий джойстик</dt><dd>Рух у напрямку погляду та вбік</dd><dt>Свайп праворуч</dt><dd>Огляд навколо</dd><dt>↑ / ↓</dt><dd>Угору / вниз</dd><dt>Ⅱ</dt><dd>Ігрове меню</dd>';
     $('panel').querySelector('.notice')!.textContent =
-      'Для поглинання потрібно бути на 15% важчим. Захист після появи — 3 секунди. Для зручності поверніть телефон горизонтально.';
+      'Зелене свічіння — здобич, червоне — небезпека. Для поглинання потрібно бути на 15% важчим. Захист після появи — 3 секунди. Для зручності поверніть телефон горизонтально.';
   }
   on('back', back);
 }
@@ -287,10 +288,7 @@ function updateHUD() {
   }
   if (c) {
     const threats = current.cells
-      .filter(
-        (x) =>
-          x.actorId !== playerId && x.mass >= c.mass * 1.15 && x.protectedUntil <= current.tick,
-      )
+      .filter((x) => canPreyOn(x, c, current.tick))
       .sort((a, b) => distance(a.position, c.position) - distance(b.position, c.position));
     const target =
       threats[0] && distance(threats[0].position, c.position) < 15

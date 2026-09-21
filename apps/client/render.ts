@@ -1,11 +1,14 @@
 import * as THREE from 'three';
 import { PALETTE, radius, getCell, type Snapshot, type Vec3 } from '../../packages/core';
+import { cellHighlight } from './highlight';
 export class ArenaRenderer {
   renderer: THREE.WebGLRenderer;
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(75, 1, 0.05, 220);
   rig = new THREE.Group();
   cells = new Map<string, THREE.Mesh<THREE.SphereGeometry, THREE.MeshStandardMaterial>>();
+  halos = new Map<string, THREE.Sprite>();
+  glowTexture = this.makeGlowTexture();
   labels = new Map<string, THREE.Sprite>();
   geometry = new THREE.SphereGeometry(1, 24, 16);
   food: THREE.InstancedMesh;
@@ -132,6 +135,20 @@ export class ArenaRenderer {
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, low ? 1 : 1.5));
     this.resize();
   }
+  private makeGlowTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 128;
+    const ctx = canvas.getContext('2d')!;
+    const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    gradient.addColorStop(0, 'rgba(255,255,255,0)');
+    gradient.addColorStop(0.58, 'rgba(255,255,255,0)');
+    gradient.addColorStop(0.72, 'rgba(255,255,255,0.8)');
+    gradient.addColorStop(0.82, 'rgba(255,255,255,0.3)');
+    gradient.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 128, 128);
+    return new THREE.CanvasTexture(canvas);
+  }
   makeLabel(text: string, color: number) {
     const canvas = document.createElement('canvas');
     canvas.width = 256;
@@ -170,6 +187,19 @@ export class ArenaRenderer {
             metalness: 0.18,
           }),
         );
+        const halo = new THREE.Sprite(
+          new THREE.SpriteMaterial({
+            map: this.glowTexture,
+            transparent: true,
+            depthWrite: false,
+            depthTest: true,
+            blending: THREE.AdditiveBlending,
+            toneMapped: false,
+          }),
+        );
+        halo.scale.set(2.8, 2.8, 1);
+        mesh.add(halo);
+        this.halos.set(c.id, halo);
         this.cells.set(c.id, mesh);
         this.scene.add(mesh);
         const label = this.makeLabel(actor.name, actor.color);
@@ -185,7 +215,15 @@ export class ArenaRenderer {
         );
       const r = radius(c.mass);
       mesh.scale.setScalar(r);
-      mesh.material.emissiveIntensity = c.protectedUntil > state.tick ? 0.65 : 0.2;
+      const highlight = cellHighlight(own, c, state.tick);
+      const halo = this.halos.get(c.id)!;
+      halo.visible = highlight.intensity > 0;
+      halo.material.color.setHex(highlight.kind === 'danger' ? 0xff3547 : 0x38ff80);
+      halo.material.opacity = highlight.intensity * 0.9;
+      mesh.material.emissive.setHex(actor.color);
+      if (halo.visible) mesh.material.emissive.lerp(halo.material.color, highlight.intensity);
+      mesh.material.emissiveIntensity =
+        c.protectedUntil > state.tick ? 0.65 : 0.2 + highlight.intensity * 0.45;
       const label = this.labels.get(c.id)!;
       label.position.copy(mesh.position);
       label.position.y += r + 0.8;
@@ -196,6 +234,8 @@ export class ArenaRenderer {
       if (!visible.has(id)) {
         this.scene.remove(mesh);
         mesh.material.dispose();
+        this.halos.get(id)!.material.dispose();
+        this.halos.delete(id);
         this.cells.delete(id);
         const label = this.labels.get(id)!;
         this.scene.remove(label);
